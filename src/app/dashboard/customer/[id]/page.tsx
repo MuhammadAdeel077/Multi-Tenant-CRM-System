@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback, use } from 'react';
 import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params);
   const id = unwrappedParams.id;
+  const { user } = useAuth();
   const [customer, setCustomer] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
@@ -115,30 +117,32 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             </dl>
           </div>
 
-          <div className="bg-white shadow rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Assign Customer</h2>
-            <form onSubmit={handleAssign} className="flex space-x-3">
-              <select
-                required
-                className="flex-1 border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={assignUserId}
-                onChange={e => setAssignUserId(e.target.value)}
-              >
-                <option value="" disabled>Select User to assign...</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={isAssigning}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
-              >
-                {isAssigning ? 'Assigning...' : 'Assign'}
-              </button>
-            </form>
-            <p className="mt-2 text-xs text-gray-500">Note: A user can have max 5 active customers assigned.</p>
-          </div>
+          {user?.role === 'admin' && (
+            <div className="bg-white shadow rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Assign Customer</h2>
+              <form onSubmit={handleAssign} className="flex space-x-3">
+                <select
+                  required
+                  className="flex-1 border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={assignUserId}
+                  onChange={e => setAssignUserId(e.target.value)}
+                >
+                  <option value="" disabled>Select User to assign...</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={isAssigning}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
+                >
+                  {isAssigning ? 'Assigning...' : 'Assign'}
+                </button>
+              </form>
+              <p className="mt-2 text-xs text-gray-500">Note: A user can have max 5 active customers assigned.</p>
+            </div>
+          )}
 
           <div className="bg-white shadow rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Notes</h2>

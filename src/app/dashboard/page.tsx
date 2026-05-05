@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -71,12 +73,14 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customers</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          Add Customer
-        </button>
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            Add Customer
+          </button>
+        )}
       </div>
 
       <div className="bg-white shadow rounded-lg border border-gray-200">
