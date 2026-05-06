@@ -57,7 +57,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder="admin@megacorp.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
