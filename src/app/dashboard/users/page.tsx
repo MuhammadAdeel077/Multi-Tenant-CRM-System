@@ -4,6 +4,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin h-5 w-5 text-blue-600 inline-block"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
+
 export default function UsersPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
@@ -60,7 +74,10 @@ export default function UsersPage() {
 
       <div className="bg-white shadow rounded-lg border border-gray-200">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading team members...</div>
+          <div className="p-12 flex flex-col items-center justify-center space-y-3 text-gray-500">
+            <Spinner />
+            <span className="text-sm">Loading team members...</span>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

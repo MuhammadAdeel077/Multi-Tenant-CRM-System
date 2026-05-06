@@ -5,6 +5,20 @@ import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin h-5 w-5 text-blue-600 inline-block"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [customers, setCustomers] = useState<any[]>([]);
@@ -15,12 +29,14 @@ export default function DashboardPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '' });
+  const [createError, setCreateError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1); // Reset page on new search
+      setPage(1);
     }, 500);
     return () => clearTimeout(timer);
   }, [search]);
@@ -44,6 +60,8 @@ export default function DashboardPage() {
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError('');
+    setIsCreating(true);
     try {
       await fetchApi('/customers', {
         method: 'POST',
@@ -52,20 +70,21 @@ export default function DashboardPage() {
       setIsModalOpen(false);
       setNewCustomer({ name: '', email: '', phone: '' });
       fetchCustomers();
-    } catch (err) {
-      alert('Failed to create customer');
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create customer');
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this customer?')) return;
-    // Optimistic UI Update
     setCustomers(prev => prev.filter(c => c.id !== id));
     try {
       await fetchApi(`/customers/${id}`, { method: 'DELETE' });
     } catch (err) {
       alert('Failed to delete');
-      fetchCustomers(); // Revert
+      fetchCustomers();
     }
   };
 
@@ -73,14 +92,13 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customers</h1>
-        {user?.role === 'admin' && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-          >
-            Add Customer
-          </button>
-        )}
+        {/* Both admin and member can create customers */}
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          Add Customer
+        </button>
       </div>
 
       <div className="bg-white shadow rounded-lg border border-gray-200">
@@ -95,7 +113,10 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading customers...</div>
+          <div className="p-12 flex flex-col items-center justify-center space-y-3 text-gray-500">
+            <Spinner />
+            <span className="text-sm">Loading customers...</span>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -103,6 +124,9 @@ export default function DashboardPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  {user?.role === 'admin' && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization</th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -110,7 +134,7 @@ export default function DashboardPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={user?.role === 'admin' ? 5 : 4} className="px-6 py-4 text-center text-sm text-gray-500">
                       No customers found.
                     </td>
                   </tr>
@@ -123,6 +147,11 @@ export default function DashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {customer.email || '-'}
                       </td>
+                      {user?.role === 'admin' && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {customer.organization?.name || '-'}
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {customer.assignedTo ? customer.assignedTo.name : 'Unassigned'}
                       </td>
@@ -130,9 +159,11 @@ export default function DashboardPage() {
                         <Link href={`/dashboard/customer/${customer.id}`} className="text-blue-600 hover:text-blue-900">
                           View
                         </Link>
-                        <button onClick={() => handleDelete(customer.id)} className="text-red-600 hover:text-red-900">
-                          Delete
-                        </button>
+                        {user?.role === 'admin' && (
+                          <button onClick={() => handleDelete(customer.id)} className="text-red-600 hover:text-red-900">
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -198,9 +229,17 @@ export default function DashboardPage() {
           >
             <div>
               <h3 className="text-lg leading-6 font-medium text-gray-900">Add New Customer</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Customer will be auto-assigned to you after creation.
+              </p>
+              {createError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-600">{createError}</p>
+                </div>
+              )}
               <form onSubmit={handleCreateCustomer} className="mt-5 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <label className="block text-sm font-medium text-gray-700">Name *</label>
                   <input
                     type="text"
                     required
@@ -230,13 +269,15 @@ export default function DashboardPage() {
                 <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse">
                   <button
                     type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+                    disabled={isCreating}
+                    className="w-full inline-flex justify-center items-center gap-2 rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors disabled:opacity-70"
                   >
-                    Save
+                    {isCreating && <Spinner />}
+                    {isCreating ? 'Saving...' : 'Save'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => { setIsModalOpen(false); setCreateError(''); }}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm transition-colors"
                   >
                     Cancel

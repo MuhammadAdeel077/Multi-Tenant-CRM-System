@@ -36,7 +36,10 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Use <span className="font-semibold text-blue-600">admin@org1.com</span> to test.
+            Use <span className="font-semibold text-blue-600">admin@megacorp.com(Admin)</span> to test.
+          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Use <span className="font-semibold text-blue-600">admin@bxtsolutions.com(User)</span> to test.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
